@@ -7,7 +7,7 @@ This skill statically audits a target `verl` repository and reports workflow/cas
 - Excludes non-test workflows through `config/workflow_scope.json`
 - Excludes `cpu_unit_tests.yml` from the scan because it is treated as shared baseline coverage rather than an NPU-adapted workflow
 - Pairs CPU/GPU workflows with their NPU counterparts
-- Counts UT cases at the test-file level
+- Counts UT cases at the test-function or test-method level
 - Counts ST cases at the command level
 - Writes an English `report.md`
 
@@ -20,6 +20,7 @@ This skill statically audits a target `verl` repository and reports workflow/cas
 ## Case rules
 
 - `pytest` means UT
+- UT entries are expanded to concrete test functions or test methods whenever the target Python file can be parsed
 - `torchrun` and `bash tests/*.sh` mean ST
 - Repeated commands are kept distinct by `workflow name`, `job name`, and `step name`
 

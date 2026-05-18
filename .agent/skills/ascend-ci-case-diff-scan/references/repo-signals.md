@@ -43,3 +43,4 @@ Recognize only workflow commands that visibly execute tests:
 - Exact target matches are the strongest signal.
 - Same target with materially different env or argument prefixes should usually become `manual_review_needed`.
 - Repeated commands should remain distinct when they appear in different workflow, job, or step contexts.
+- For UT, prefer function-level or test-method-level comparison over file-level comparison because broad `pytest tests/...` commands and `--ignore-glob` options can hide partial support.

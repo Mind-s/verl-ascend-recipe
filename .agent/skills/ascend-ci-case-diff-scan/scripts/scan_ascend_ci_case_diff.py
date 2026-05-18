@@ -360,7 +360,6 @@ def expand_python_test_file(path_text: str, repo_root: Path) -> list[str]:
         return [path_text]
     return [f"{path_text}::{function_name}" for function_name in functions]
 
-
 def expand_pytest_directory(
     target_path: Path,
     repo_root: Path,
@@ -380,8 +379,6 @@ def expand_pytest_directory(
             continue
         expanded.extend(expand_python_test_file(path_text, repo_root))
     return expanded
-
-
 def expand_pytest_targets(
     target: str,
     repo_root: Path,

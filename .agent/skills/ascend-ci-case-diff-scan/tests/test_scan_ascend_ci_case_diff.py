@@ -85,22 +85,29 @@ class ScanAscendCiCaseDiffTests(unittest.TestCase):
                 """,
             )
             (repo_root / "tests" / "trainer" / "ppo").mkdir(parents=True, exist_ok=True)
-            (repo_root / "tests" / "trainer" / "ppo" / "test_core.py").write_text("def test_core():\n    pass\n", encoding="utf-8")
-            (repo_root / "tests" / "trainer" / "ppo" / "test_other.py").write_text("def test_other():\n    pass\n", encoding="utf-8")
+            (repo_root / "tests" / "trainer" / "ppo" / "test_core.py").write_text(
+                "def test_core():\n    pass\n\ndef test_aux():\n    pass\n",
+                encoding="utf-8",
+            )
+            (repo_root / "tests" / "trainer" / "ppo" / "test_other.py").write_text(
+                "class TestOther:\n    def test_other(self):\n        pass\n",
+                encoding="utf-8",
+            )
 
             config = MODULE.load_config()
             _, cases, _ = MODULE.collect_scan_data(repo_root, config)
             ut_cases = [case for case in cases if case["case_kind"] == MODULE.UT_KIND]
 
-            self.assertEqual(len(ut_cases), 4)
+            self.assertEqual(len(ut_cases), 6)
             case_ids = {case["case_id"] for case in ut_cases}
-            self.assertEqual(len(case_ids), 4)
+            self.assertEqual(len(case_ids), 6)
             targets = sorted({case["target"] for case in ut_cases})
             self.assertEqual(
                 targets,
                 [
-                    "tests/trainer/ppo/test_core.py",
-                    "tests/trainer/ppo/test_other.py",
+                    "tests/trainer/ppo/test_core.py::test_aux",
+                    "tests/trainer/ppo/test_core.py::test_core",
+                    "tests/trainer/ppo/test_other.py::TestOther::test_other",
                 ],
             )
 
@@ -180,7 +187,7 @@ class ScanAscendCiCaseDiffTests(unittest.TestCase):
             )
             (repo_root / "tests" / "utils").mkdir(parents=True, exist_ok=True)
             (repo_root / "tests" / "utils" / "test_normalize_peft_param_name.py").write_text(
-                "def test_normalize_peft_param_name():\n    pass\n",
+                "def test_normalize_peft_param_name():\n    pass\n\ndef test_extra_gpu_only():\n    pass\n",
                 encoding="utf-8",
             )
 
@@ -189,8 +196,38 @@ class ScanAscendCiCaseDiffTests(unittest.TestCase):
 
             matched_names = {item["name"] for item in report["ut_details"]["matched"]}
             manual_names = {item["name"] for item in report["ut_details"]["manual_review"]}
-            self.assertNotIn("tests/utils/test_normalize_peft_param_name.py", matched_names)
-            self.assertIn("tests/utils/test_normalize_peft_param_name.py", manual_names)
+            self.assertNotIn("tests/utils/test_normalize_peft_param_name.py::test_normalize_peft_param_name", matched_names)
+            self.assertIn("tests/utils/test_normalize_peft_param_name.py::test_normalize_peft_param_name", manual_names)
+
+    def test_ut_ignores_filtered_functions_by_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            write_workflow(
+                repo_root / ".github" / "workflows" / "gpu_unit_tests.yml",
+                """
+                name: GPU unit tests
+                jobs:
+                  tests:
+                    steps:
+                      - name: Run all GPU unit tests
+                        run: pytest --ignore-glob="*test_skip_me.py" tests/
+                """,
+            )
+            (repo_root / "tests" / "utils").mkdir(parents=True, exist_ok=True)
+            (repo_root / "tests" / "utils" / "test_keep_me.py").write_text(
+                "def test_keep():\n    pass\n",
+                encoding="utf-8",
+            )
+            (repo_root / "tests" / "utils" / "test_skip_me.py").write_text(
+                "def test_skip():\n    pass\n",
+                encoding="utf-8",
+            )
+
+            config = MODULE.load_config()
+            _, cases, _ = MODULE.collect_scan_data(repo_root, config)
+            targets = sorted(case["target"] for case in cases if case["case_kind"] == MODULE.UT_KIND)
+
+            self.assertEqual(targets, ["tests/utils/test_keep_me.py::test_keep"])
 
 
 if __name__ == "__main__":

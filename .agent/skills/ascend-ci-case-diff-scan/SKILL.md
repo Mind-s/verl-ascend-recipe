@@ -13,7 +13,7 @@ The scanner performs a static analysis of workflow files and reports:
 
 1. Which workflows are out of scope and excluded by configuration.
 2. Which CPU/GPU workflows are paired with NPU workflows.
-3. How many UT and ST cases each workflow contributes.
+3. How many function-level UT cases and command-level ST cases each workflow contributes.
 4. Which cases are matched, missing, NPU-only, or need manual review.
 
 ## Scope
@@ -67,6 +67,7 @@ For each extracted case, preserve:
 - `signature`
 
 When the same command is repeated, keep cases distinct by `workflow_name`, `job_name`, and `step_name`.
+For UT expansion, treat Python test functions and `Test*::test_*` methods as the reporting unit whenever the target file can be parsed.
 
 ## Classification Rules
 
