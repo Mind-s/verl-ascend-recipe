@@ -334,7 +334,7 @@ class MMActorRolloutRefWorker(ActorRolloutRefWorker):
                     print("[actor model] Vision tower is set to not trainable.")
             else:
                 if self.rank == 0:
-                    print("[actor model] No vision tower found.")
+                    logger.info("[actor model] No vision tower found.")
 
         torch.distributed.barrier()
 
