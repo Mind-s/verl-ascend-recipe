@@ -92,7 +92,9 @@ def build_display_name(case: dict) -> str:
     return f"{case['target']} [{case['workflow_name']} / {case['job_name']} / {case['step_name']}]"
 
 
-def _extract_run_entries(lines: list[str], start_idx: int, indent: int, inline: str) -> tuple[list[tuple[str, int]], int]:
+def _extract_run_entries(
+    lines: list[str], start_idx: int, indent: int, inline: str
+) -> tuple[list[tuple[str, int]], int]:
     run_entries: list[tuple[str, int]] = []
     if inline and inline not in {"|", ">"}:
         run_entries.append((inline, start_idx + 1))
