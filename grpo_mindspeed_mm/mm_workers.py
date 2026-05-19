@@ -89,7 +89,7 @@ class MMActorRolloutRefWorker(ActorRolloutRefWorker):
 
         for k in list(params.keys()):
             if "mlp.experts.gate_up_proj" in k or "mlp.experts.down_proj" in k:
-                print(f"--> modify shape {k}")
+                logger.info(f"--> modify shape {k}")
                 params[k] = params[k].transpose(1, 2).contiguous()
 
         # Special handling for LoRA with sleep_level=2:
