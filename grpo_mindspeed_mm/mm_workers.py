@@ -280,7 +280,7 @@ class MMActorRolloutRefWorker(ActorRolloutRefWorker):
         override_config_kwargs.update(override_model_config)
         update_model_config(actor_model_config, override_config_kwargs=override_config_kwargs)
         if self.rank == 0:
-            print(f"Model config after override: {actor_model_config}")
+            logger.info(f"Model config after override: {actor_model_config}")
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
