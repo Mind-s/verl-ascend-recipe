@@ -186,8 +186,8 @@ def render_past_commit_report(report: dict) -> str:
                 [
                     "Workflow",
                     "Change",
-                    "Base Case Count",
-                    "HEAD Case Count",
+                    "Window Start Case Count",
+                    "Current HEAD Case Count",
                     "UT Gap Count",
                     "ST Gap Count",
                     "Related Commits",

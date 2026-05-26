@@ -310,7 +310,17 @@ def _past_summary_rows(report: dict) -> list[list[object]]:
 
 
 def _past_workflow_rows(report: dict) -> list[list[object]]:
-    rows = [["Workflow", "Change", "Base Cases", "HEAD Cases", "UT Gap", "ST Gap", "Related Commits"]]
+    rows = [
+        [
+            "Workflow",
+            "Change",
+            "Window Start Cases",
+            "Current HEAD Cases",
+            "UT Gap",
+            "ST Gap",
+            "Related Commits",
+        ]
+    ]
     rows.extend(
         [
             row["workflow_path"],

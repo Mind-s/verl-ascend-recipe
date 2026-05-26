@@ -246,6 +246,7 @@ def build_past_commit_report(repo_root: Path, config: WorkflowConfig, since_days
         )
         workflow_changes.append(workflow_row)
 
+    workflow_changes = sorted(workflow_changes, key=_workflow_change_sort_key)
     summary = _summarize_details(case_details)
     commit_details = _build_commit_details(commits, workflow_changes, case_details)
     return {
@@ -290,6 +291,11 @@ def _workflow_status(base_info: object | None, head_info: object | None) -> str:
     if base_info is not None and head_info is None:
         return "removed"
     return "modified"
+
+
+def _workflow_change_sort_key(row: dict) -> tuple[int, str]:
+    status_order = {"added": 0, "modified": 1, "removed": 2}
+    return status_order.get(row["workflow_status"], 99), row["workflow_path"]
 
 
 def _collect_window_changed_files(commits: list[CommitInfo]) -> set[str]:
