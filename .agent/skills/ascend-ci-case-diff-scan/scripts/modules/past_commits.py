@@ -198,6 +198,9 @@ def build_past_commit_report(repo_root: Path, config: WorkflowConfig, since_days
     for workflow_path in workflow_paths:
         head_info = head_workflow_infos.get(workflow_path)
         base_info = base_workflow_infos.get(workflow_path)
+        workflow_kind = head_info.workflow_kind if head_info else base_info.workflow_kind
+        if workflow_kind == "npu":
+            continue
         head_workflow_cases = head_cases_by_path.get(workflow_path, [])
         base_case_keys = {_case_change_key(case) for case in base_cases_by_path.get(workflow_path, [])}
         changed_cases = _collect_changed_head_cases(head_workflow_cases, base_case_keys, changed_files)

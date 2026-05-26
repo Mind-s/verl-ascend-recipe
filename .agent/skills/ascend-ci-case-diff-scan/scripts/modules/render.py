@@ -164,7 +164,11 @@ def render_past_commit_report(report: dict) -> str:
     if summary_rows:
         lines.extend(
             render_table(
-                ["CPU/GPU and NPU Not Fully Aligned Cases", "UT Gap Count", "ST Gap Count"],
+                [
+                    "CPU/GPU and NPU Not Fully Aligned Cases",
+                    "UT Not Fully Aligned with NPU Count",
+                    "ST Not Fully Aligned with NPU Count",
+                ],
                 summary_rows,
             )
         )
@@ -192,8 +196,8 @@ def render_past_commit_report(report: dict) -> str:
                     "Change",
                     "Window Start Case Count",
                     "Current HEAD Case Count",
-                    "UT Gap Count",
-                    "ST Gap Count",
+                    "UT Not Fully Aligned with NPU Count",
+                    "ST Not Fully Aligned with NPU Count",
                     "Related Commits",
                 ],
                 workflow_rows,

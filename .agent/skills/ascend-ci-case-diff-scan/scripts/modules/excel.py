@@ -298,7 +298,15 @@ def _xml_text(value: str) -> str:
 
 
 def _past_summary_rows(report: dict) -> list[list[object]]:
-    rows = [["Workflow", "UT Gap Count", "ST Gap Count", "Change Count", "Related Commits"]]
+    rows = [
+        [
+            "Workflow",
+            "UT Not Fully Aligned with NPU Count",
+            "ST Not Fully Aligned with NPU Count",
+            "Change Count",
+            "Related Commits",
+        ]
+    ]
     rows.extend(
         [
             row["workflow_path"],
@@ -319,8 +327,8 @@ def _past_workflow_rows(report: dict) -> list[list[object]]:
             "Change",
             "Window Start Cases",
             "Current HEAD Cases",
-            "UT Gap",
-            "ST Gap",
+            "UT Not Fully Aligned with NPU",
+            "ST Not Fully Aligned with NPU",
             "Related Commits",
         ]
     ]
