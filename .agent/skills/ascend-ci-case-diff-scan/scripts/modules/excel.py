@@ -117,7 +117,7 @@ def _ref_sort_key(ref: dict) -> tuple[object, ...]:
 
 def _side_cells(ref: dict | None) -> list[object]:
     if not ref:
-        return ["", "", "", ""]
+        return ["", "", "", "", ""]
     return [
         ref["workflow_path"],
         ref["line_number"],

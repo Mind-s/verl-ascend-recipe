@@ -53,6 +53,8 @@ def _run_git(repo_root: Path, *args: str) -> str:
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="ignore",
     )
     return result.stdout
 
@@ -329,14 +331,20 @@ def _case_target_changed(case: dict, changed_files: set[str]) -> bool:
     if case["workflow_path"] in changed_files:
         return True
     if case["command_type"] == "pytest":
-        if case_path in {"tests", "tests/"}:
-            return any(path.startswith("tests/") for path in changed_files)
-        return case_path in changed_files
+        return _path_or_child_changed(case_path, changed_files)
     if case["command_type"] == "bash":
         return case_path in changed_files
     if case["command_type"] == "torchrun":
-        return case_path in changed_files or any(path.startswith(case_path.rstrip("/") + "/") for path in changed_files)
+        return _path_or_child_changed(case_path, changed_files)
     return False
+
+
+def _path_or_child_changed(path_text: str, changed_files: set[str] | tuple[str, ...]) -> bool:
+    normalized = normalize_path_text(path_text).rstrip("/")
+    if normalized in changed_files:
+        return True
+    prefix = normalized + "/"
+    return any(path.startswith(prefix) for path in changed_files)
 
 
 def _case_change_key(case: dict) -> tuple[str, ...]:
@@ -386,11 +394,9 @@ def _commit_touches_case_path(commit: CommitInfo, case: dict) -> bool:
     if case["command_type"] == "bash":
         return case_path in commit.changed_files
     if case["command_type"] == "torchrun":
-        return any(path.startswith(case_path.rstrip("/")) for path in commit.changed_files)
+        return _path_or_child_changed(case_path, commit.changed_files)
     if case["command_type"] == "pytest":
-        if case_path in {"tests", "tests/"}:
-            return any(path.startswith("tests/") for path in commit.changed_files)
-        return case_path in commit.changed_files
+        return _path_or_child_changed(case_path, commit.changed_files)
     return False
 
 
