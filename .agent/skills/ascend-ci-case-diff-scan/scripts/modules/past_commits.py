@@ -70,11 +70,6 @@ def _is_relevant_path(path_text: str) -> bool:
     )
 
 
-def _is_workflow_path(path_text: str) -> bool:
-    normalized = normalize_path_text(path_text)
-    return normalized.startswith(WORKFLOW_PREFIX) and normalized.endswith((".yml", ".yaml"))
-
-
 def _get_first_parent_commits(repo_root: Path, since_days: int) -> list[str]:
     cutoff = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=since_days)).isoformat()
     output = _run_git(
