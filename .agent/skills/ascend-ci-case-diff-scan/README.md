@@ -25,8 +25,11 @@ This skill statically audits a target `verl` repository and reports workflow/cas
 - Repeated commands are kept distinct by `workflow name`, `job name`, and `step name`
 - Use `--repo-root` to point at the target `verl` repository root
 - The scanner reads workflow `run:` commands directly and records only the scripts explicitly invoked by each step
-- `--since-days` enables a second report that traces the final workflow / UT / ST changes within the selected window and checks them against the current HEAD NPU support state
-- The past-N-days report keeps the same workflow-first logic as the full scan, but only surfaces workflows and cases that actually changed within the window
+- `--since-days N` enables a second report for the last `N` merged days and must be a positive integer
+- The past-N-days report keeps the same workflow-first logic as the full scan, but only surfaces CPU/GPU workflows and cases that ended up changed within the window
+- NPU workflows are used as current support evidence in the past report, not as changed-workflow rows
+- For past-N-days cases, `Related Commits` reflects commits in the selected window that touched the workflow or the changed case target
+- `bash` and `torchrun` use strict command-level signatures; `pytest` keeps execution semantics while avoiding false differences from broad discovery selectors
 
 ## Output
 
@@ -36,6 +39,13 @@ The reports include:
 - scanned workflows with CPU/GPU and NPU case counts
 - UT details
 - ST details
+
+Past-N-days reports also include:
+
+- a summary of CPU/GPU workflows that are not fully aligned with NPU
+- changed workflow rows with window-start and current-HEAD case counts
+- changed case details with signatures and related commits
+- commit details for the merged commits inside the selected window
 
 Within UT and ST sections, the report shows matched, CPU/GPU-only, NPU-only, and manual-review cases in that order, with adjacent CPU/GPU and NPU references for easy comparison.
 

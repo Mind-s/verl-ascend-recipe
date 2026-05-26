@@ -47,7 +47,10 @@ def parse_args() -> argparse.Namespace:
         "--since-days",
         type=int,
         default=None,
-        help="Optional number of days for past-commit analysis. When set, also write report-past-N.md/xlsx.",
+        help=(
+            "Optional positive integer for past-N-days analysis. "
+            "When omitted, only report.md/xlsx are written; when set, also write report-past-N.md/xlsx."
+        ),
     )
     return parser.parse_args()
 
