@@ -90,6 +90,8 @@ def extract_torchrun_targets(tokens: list[str], torchrun_idx: int) -> list[str]:
     while idx < len(tokens):
         token = tokens[idx]
         if token.startswith("-"):
+            if "=" not in token:
+                idx += 1  # skip flag value
             idx += 1
             continue
         normalized = normalize_path_text(token.strip("\"'"))

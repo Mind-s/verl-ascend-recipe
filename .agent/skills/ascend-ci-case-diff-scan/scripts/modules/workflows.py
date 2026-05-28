@@ -31,7 +31,7 @@ from .extractors import (
     should_keep_target,
 )
 
-WORKFLOW_NAME_RE = re.compile(r"^\s*name:\s*(.+?)\s*$")
+WORKFLOW_NAME_RE = re.compile(r"^\s*name:\s*(.+?)\s*$", re.MULTILINE)
 JOB_RE = re.compile(r"^(\s{2})([A-Za-z0-9_-]+):\s*$")
 STEP_NAME_RE = re.compile(r"^(\s*)-\s+name:\s*(.+?)\s*$")
 RUN_RE = re.compile(r"^(\s*)run:\s*(.*)$")
@@ -98,6 +98,9 @@ def _normalize_pytest_signature(tokens: list[str]) -> str:
             continue
         if token in PYTEST_SELECTION_OPTIONS and idx + 1 < len(tokens):
             idx += 2
+            continue
+        if token.startswith(("-k=", "-m=")):
+            idx += 1
             continue
         if token.startswith("-"):
             normalized_tokens.append(normalize_path_text(token))
