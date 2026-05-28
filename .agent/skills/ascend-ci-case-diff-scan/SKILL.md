@@ -17,7 +17,7 @@ The full reports show ignored workflows, paired CPU/GPU and NPU workflows, UT/ST
 
 1. Read [references/repo-signals.md](./references/repo-signals.md) for repo-specific boundaries.
 2. Identify the target `verl` repository root, for example `{PATH}/verl`.
-3. Run the scanner from this repository:
+3. Run the scanner. The commands below assume the working directory is the root of `verl-ascend-recipe` (where `.agent/` lives). You can also `cd` into `scripts/` and run `python scan_ascend_ci_case_diff.py ...` directly.
 
 ```shell
 python .agent/skills/ascend-ci-case-diff-scan/scripts/scan_ascend_ci_case_diff.py \
