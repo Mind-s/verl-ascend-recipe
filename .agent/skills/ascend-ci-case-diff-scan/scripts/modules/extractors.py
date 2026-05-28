@@ -91,7 +91,12 @@ def extract_torchrun_targets(tokens: list[str], torchrun_idx: int) -> list[str]:
         token = tokens[idx]
         if token.startswith("-"):
             if "=" not in token:
-                idx += 1  # skip flag value
+                # Only skip the next token when it looks like a value,
+                # not another flag and not a test target.
+                if idx + 1 < len(tokens):
+                    nxt = tokens[idx + 1]
+                    if not nxt.startswith("-") and not nxt.startswith("tests/"):
+                        idx += 1
             idx += 1
             continue
         normalized = normalize_path_text(token.strip("\"'"))
