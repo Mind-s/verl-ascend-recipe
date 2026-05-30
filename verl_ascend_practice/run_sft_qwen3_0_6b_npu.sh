@@ -25,7 +25,7 @@ MASTER_PORT=$(shuf -i 20000-65535 -n 1)
 # Data path
 TRAIN_DATA=${TRAIN_DATA:-"${HOME}/data/gsm8k_sft/train.parquet"}
 TEST_DATA=${TEST_DATA:-"${HOME}/data/gsm8k_sft/test.parquet"}
-# Model and output path（YouZhi-7B by default）
+# Model and output path
 MODEL_PATH=${MODEL_PATH:-"Qwen/Qwen3-0.6B"}
 SAVE_PATH=${SAVE_PATH:-"sft_outputs"}
 # Training hyperparameters
@@ -43,8 +43,8 @@ EXPERIMENT_NAME=${EXPERIMENT_NAME:-"qwen3_0.6b_sft"}
 # Run SFT training
 torchrun --nnodes=${NNODES} --nproc_per_node=${NPROC_PER_NODE} --master_port=${MASTER_PORT} \
   -m verl.trainer.sft_trainer \
-  data.train_files=$HOME/data/gsm8k/train.parquet \
-  data.val_files=$HOME/data/gsm8k/test.parquet \
+  data.train_files=${TRAIN_DATA} \
+  data.val_files=${TEST_DATA} \
   data.train_batch_size=${TRAIN_BATCH_SIZE} \
   data.truncation=right \
   data.max_length=${MAX_LENGTH} \

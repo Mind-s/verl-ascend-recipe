@@ -68,8 +68,8 @@ Use the built-in VeRL script to standardize and clean the GSM8K dataset, generat
 # local_dataset_path: Path for raw dataset storage
 # local_save_dir: Output path for processed SFT data
 python verl/examples/data_preprocess/gsm8k_multiturn_sft.py \
---local_dataset_path "${HOME}/gsm8k" \
---local_save_dir "${HOME}/gsm8k_sft"
+--local_dataset_path "${HOME}/data/gsm8k" \
+--local_save_dir "${HOME}/data/gsm8k_sft"
 ```
 
 #### 4.1.2 Launch SFT Training
@@ -99,8 +99,8 @@ Run the RL preprocessing script to generate RL dataset, supporting reward calcul
 ```bash
 # GSM8K RL data preprocessing
 python verl/examples/data_preprocess/gsm8k.py \
---local_dataset_path "${HOME}/gsm8k" \
---local_save_dir "${HOME}/gsm8k_rl"
+--local_dataset_path "${HOME}/data/gsm8k" \
+--local_save_dir "${HOME}/data/gsm8k_rl"
 ```
 
 #### 4.2.2 Launch RL Training
