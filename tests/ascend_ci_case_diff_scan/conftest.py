@@ -10,10 +10,8 @@ import pytest
 
 # Add the skill's scripts/ directory to sys.path so that
 # "import modules.xxx" and relative imports inside modules work correctly.
-_SKILL_SCRIPTS = (
-    Path(__file__).resolve().parent.parent.parent / ".agent" / "skills" / "ascend-ci-case-diff-scan" / "scripts"
-)
-if str(_SKILL_SCRIPTS) not in sys.path:
+_SKILL_SCRIPTS = Path(__file__).resolve().parents[2] / ".agent" / "skills" / "ascend-ci-case-diff-scan" / "scripts"
+if not any(Path(p).resolve() == _SKILL_SCRIPTS.resolve() for p in sys.path):
     sys.path.insert(0, str(_SKILL_SCRIPTS))
 
 # ---------------------------------------------------------------------------
@@ -150,7 +148,12 @@ def temp_json_config(tmp_path):
 
 @pytest.fixture
 def sample_test_py_content():
-    """Python source with various test functions and classes."""
+    """Python source with various test functions and classes.
+
+    NOTE: This content is parsed by ast.parse() for test function
+    extraction only — it is never executed, so undefined references
+    and missing imports are intentional.
+    """
     return '''
 import pytest
 
@@ -201,11 +204,21 @@ def sample_test_py_file(tmp_path, sample_test_py_content):
 # Case dict fixtures (for compare/render tests)
 # ---------------------------------------------------------------------------
 
+_BASE_UT_CASE = {
+    "line_number": 8,
+    "command_type": "pytest",
+    "case_kind": "ut",
+    "target": "tests/test_foo.py::test_add",
+    "raw_command": "pytest tests/",
+    "signature": "pytest pytest-dir",
+}
+
 
 @pytest.fixture
 def sample_cpu_gpu_case():
     """A representative CPU/GPU case dict."""
     return {
+        **_BASE_UT_CASE,
         "workflow_name": "GPU Unit Tests",
         "workflow_path": ".github/workflows/gpu_unit_tests.yml",
         "file_name": "gpu_unit_tests.yml",
@@ -213,12 +226,6 @@ def sample_cpu_gpu_case():
         "pair_key": "gpu_unit_tests",
         "job_name": "unit-tests",
         "step_name": "Run pytest",
-        "line_number": 8,
-        "command_type": "pytest",
-        "case_kind": "ut",
-        "target": "tests/test_foo.py::test_add",
-        "raw_command": "pytest tests/",
-        "signature": "pytest pytest-dir",
     }
 
 
@@ -226,6 +233,7 @@ def sample_cpu_gpu_case():
 def sample_npu_case():
     """A representative NPU case dict matching the CPU/GPU case."""
     return {
+        **_BASE_UT_CASE,
         "workflow_name": "NPU Unit Tests",
         "workflow_path": ".github/workflows/npu_unit_tests.yml",
         "file_name": "npu_unit_tests.yml",
@@ -233,12 +241,6 @@ def sample_npu_case():
         "pair_key": "gpu_unit_tests",
         "job_name": "unit-tests",
         "step_name": "Run pytest on NPU",
-        "line_number": 8,
-        "command_type": "pytest",
-        "case_kind": "ut",
-        "target": "tests/test_foo.py::test_add",
-        "raw_command": "pytest tests/",
-        "signature": "pytest pytest-dir",
     }
 
 

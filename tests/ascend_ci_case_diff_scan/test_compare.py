@@ -9,6 +9,8 @@ from __future__ import annotations
 
 def _make_case(**overrides):
     """Build a minimal case dict with defaults."""
+    from modules.workflows import build_case_id, build_display_name
+
     defaults = {
         "workflow_name": "Test Workflow",
         "workflow_path": ".github/workflows/test.yml",
@@ -27,10 +29,9 @@ def _make_case(**overrides):
         "display_name": "tests/test_foo.py::test_add",
     }
     defaults.update(overrides)
-    # ensure case_id and display_name are consistent when not overridden
+    # Regenerate case_id and display_name when not overridden,
+    # so they stay consistent with any overridden target/signature fields.
     if "case_id" not in overrides:
-        from modules.workflows import build_case_id, build_display_name
-
         defaults["case_id"] = build_case_id(defaults)
         defaults["display_name"] = build_display_name(defaults)
     return defaults
@@ -65,14 +66,18 @@ class TestMakeRef:
         case = _make_case()
         ref = make_ref(case)
 
-        assert ref["name"] == case["display_name"]
-        assert ref["workflow_name"] == case["workflow_name"]
-        assert ref["workflow_path"] == case["workflow_path"]
-        assert ref["job_name"] == case["job_name"]
-        assert ref["step_name"] == case["step_name"]
-        assert ref["line_number"] == case["line_number"]
-        assert ref["signature"] == case["signature"]
-        assert ref["raw_command"] == case["raw_command"]
+        field_map = {
+            "name": "display_name",
+            "workflow_name": "workflow_name",
+            "workflow_path": "workflow_path",
+            "job_name": "job_name",
+            "step_name": "step_name",
+            "line_number": "line_number",
+            "signature": "signature",
+            "raw_command": "raw_command",
+        }
+        for ref_key, case_key in field_map.items():
+            assert ref[ref_key] == case[case_key], f"Mismatch for {ref_key}"
 
 
 # ============================================================================

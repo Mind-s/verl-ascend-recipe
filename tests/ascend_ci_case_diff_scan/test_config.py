@@ -34,6 +34,7 @@ def test_config_path_points_to_workflow_scope_json():
 
     assert CONFIG_PATH.name == "workflow_scope.json"
     assert CONFIG_PATH.parent.name == "config"
+    assert "ascend-ci-case-diff-scan" in str(CONFIG_PATH)
 
 
 # ============================================================================
