@@ -647,15 +647,16 @@ class TestExtractCasesFromCommand:
         assert any("pytest-file" in c["signature"] for c in result)
 
     def test_dedup_identical_cases(self, tmp_path):
-        """Cover L331: duplicate cases with same key are deduped."""
+        """Cover L326-334: dedup safety net exercised."""
         from modules.workflows import _extract_cases_from_command
 
-        # Two identical bash commands in same step would produce same extraction
-        # For dedup test: extract twice and verify the function produces at most 1
+        # Within a single command, bash/torchrun/pytest are mutually exclusive,
+        # so dedup is rarely triggered — it exists as a safety net.
+        # Verify the result has expected shape and content fields.
         result = _extract_cases_from_command("bash tests/test_integration.sh", tmp_path)
-        # The dedup is within a single command extraction, so this mainly
-        # exercises the dedup code path (even if no duplicates found)
-        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["command_type"] == "bash"
+        assert result[0]["target"] == "tests/test_integration.sh"
 
 
 # ============================================================================
@@ -664,22 +665,19 @@ class TestExtractCasesFromCommand:
 
 
 class TestCollectScanDataEdgeCases:
-    def test_workflow_content_parse_returns_none(self, tmp_path, empty_config):
-        """Cover L419-420: parse_workflow returns None for non-ignored workflow."""
+    def test_workflow_without_run_steps_parsed_with_zero_cases(self, tmp_path, empty_config):
+        """Workflow without jobs/run steps is parsed with 0 cases, not ignored."""
         from modules.workflows import collect_scan_data
 
         wf_dir = tmp_path / ".github" / "workflows"
         wf_dir.mkdir(parents=True)
-        # Create a file that exists but whose content triggers ignore
-        # by having no valid jobs with run commands
         (wf_dir / "empty.yml").write_text("name: Empty\n", encoding="utf-8")
 
         workflow_infos, cases, ignored_paths = collect_scan_data(tmp_path, empty_config)
 
-        # empty.yml has no ignored pattern, but parse_workflow_content may still
-        # process it. If it returns None, it goes to ignored_paths (L419-420).
-        # Either way, the code path is exercised.
-        assert isinstance(ignored_paths, list)
+        # Not ignored (no matching pattern in empty_config), parsed with 0 cases
+        assert any(info.file_name == "empty.yml" for info in workflow_infos)
+        assert len(ignored_paths) == 0
 
 
 # ============================================================================
@@ -699,7 +697,7 @@ class TestMultilineRunEntries:
         ]
         entries, next_idx = _extract_run_entries(lines, 0, 8, "|")
         assert len(entries) == 1
-        assert "pytest" in entries[0][0]
+        assert entries[0][0] == "pytest tests/"
 
     def test_indented_continuation_line(self):
         """Cover L189-191: continuation line with indent-based extraction."""
@@ -712,6 +710,8 @@ class TestMultilineRunEntries:
         ]
         entries, next_idx = _extract_run_entries(lines, 0, 8, "|")
         assert len(entries) == 2
+        assert entries[0][0] == "pytest tests/"
+        assert entries[1][0] == "pytest tests/more/"
 
 
 # ============================================================================
