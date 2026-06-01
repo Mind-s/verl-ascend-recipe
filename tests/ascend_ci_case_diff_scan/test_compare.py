@@ -33,6 +33,7 @@ def _make_case(**overrides):
     # so they stay consistent with any overridden target/signature fields.
     if "case_id" not in overrides:
         defaults["case_id"] = build_case_id(defaults)
+    if "display_name" not in overrides:
         defaults["display_name"] = build_display_name(defaults)
     return defaults
 

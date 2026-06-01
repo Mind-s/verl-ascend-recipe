@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 # ============================================================================
@@ -116,11 +114,9 @@ class TestLoadText:
 
         path = tmp_path / "test_utf8_sig.txt"
         path.write_bytes(b"\xef\xbb\xbfhello world")
-        # utf-8 is tried first and succeeds on BOM bytes (BOM is valid utf-8),
-        # so the BOM character is retained in the result
+        # utf-8-sig is tried first and strips the BOM if present.
         result = load_text(path)
-        assert "hello world" in result
-        assert len(result) > len("hello world")
+        assert result == "hello world"
 
     def test_gb18030(self, tmp_path):
         from modules.config import load_text
@@ -233,11 +229,12 @@ class TestValidateRepoRoot:
         # temp_workflow_dir already has .github/workflows/
         validate_repo_root(temp_workflow_dir)
 
-    def test_nonexistent_path(self):
+    def test_nonexistent_path(self, tmp_path):
         from modules.config import validate_repo_root
 
+        nonexistent = tmp_path / "nonexistent_dir"
         with pytest.raises(FileNotFoundError, match="does not exist"):
-            validate_repo_root(Path("/nonexistent/path/12345"))
+            validate_repo_root(nonexistent)
 
     def test_path_is_file_not_dir(self, tmp_path):
         from modules.config import validate_repo_root
