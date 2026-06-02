@@ -604,6 +604,9 @@ class TestPastRows:
         }
         rows = _past_case_rows(report)
         assert len(rows) >= 2
+        assert rows[1][0] == "gpu_unit_tests.yml"
+        assert rows[1][1] == "tests/test_new.py::test_feature"
+        assert rows[1][2] == "ut"
 
     def test_past_detail_rows(self):
         from modules.excel import _past_detail_rows
@@ -620,4 +623,6 @@ class TestPastRows:
         }
         rows = _past_detail_rows(report)
         assert len(rows) >= 2
-        assert any("abc123def456" in str(cell) for cell in rows[1])
+        assert rows[1][0] == "abc123def456"
+        assert rows[1][1] == "2026-05-30T00:00:00+00:00"
+        assert rows[1][2] == "Add new test"
