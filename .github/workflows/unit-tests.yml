@@ -1,0 +1,174 @@
+name: Unit Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install pytest
+
+      - name: Run unit tests
+        id: run_tests
+        run: |
+          pytest tests/ -v --tb=short 2>&1 | tee pytest-output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Parse test results
+        if: always()
+        id: parse
+        run: |
+          # Parse pytest summary line from the output
+          SUMMARY=$(grep -E '^=+.*=+$' pytest-output.txt | tail -1 || echo "")
+
+          # Extract counts with fallback to 0
+          PASSED=$(echo "$SUMMARY" | grep -oP '\d+(?=\s*passed)' || echo "0")
+          FAILED=$(echo "$SUMMARY" | grep -oP '\d+(?=\s*failed)' || echo "0")
+          ERRORS=$(echo "$SUMMARY" | grep -oP '\d+(?=\s*errors?)' || echo "0")
+
+          PASSED=${PASSED:-0}
+          FAILED=${FAILED:-0}
+          ERRORS=${ERRORS:-0}
+          TOTAL=$((PASSED + FAILED + ERRORS))
+
+          if [ "$TOTAL" -gt 0 ]; then
+            PASS_RATE=$(python -c "print(f'{($PASSED/$TOTAL)*100:.1f}')")
+          else
+            PASS_RATE="0.0"
+          fi
+
+          # Export as outputs for the dependent comment job
+          echo "passed=$PASSED" >> $GITHUB_OUTPUT
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+          echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "pass_rate=$PASS_RATE" >> $GITHUB_OUTPUT
+
+          # Write per-version summary to job's step summary
+          {
+            echo "## Unit Test Results (Python ${{ matrix.python-version }})"
+            echo
+            echo "| Total | Passed | Failed | Errors | Pass Rate |"
+            echo "|-------|--------|--------|--------|-----------|"
+            echo "| ${TOTAL} | ${PASSED} | ${FAILED} | ${ERRORS} | ${PASS_RATE}% |"
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-py${{ matrix.python-version }}
+          path: |
+            pytest-output.txt
+          retention-days: 1
+
+  comment:
+    needs: unit-tests
+    if: github.event_name == 'pull_request' && always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Download all test result artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-py*
+
+      - name: Aggregate results and comment on PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Collect results from each Python version artifact
+            const results = [];
+            const pythonVersions = ["3.10", "3.11", "3.12"];
+
+            for (const py of pythonVersions) {
+              const artifactDir = `test-results-py${py}`;
+              const fs = require("fs");
+              const path = require("path");
+
+              const outputFile = path.join(artifactDir, "pytest-output.txt");
+              let passed = 0, failed = 0, errors = 0, total = 0;
+              let passRate = "0.0";
+              let summary = "N/A";
+
+              try {
+                const content = fs.readFileSync(outputFile, "utf8");
+                // Find the pytest summary line
+                const lines = content.split("\n");
+                const summaryLine = lines.reverse().find(l => /^=+.*=+$/.test(l)) || "";
+
+                const passedMatch = summaryLine.match(/(\d+)\s*passed/);
+                const failedMatch = summaryLine.match(/(\d+)\s*failed/);
+                const errorMatch = summaryLine.match(/(\d+)\s*errors?/);
+
+                passed = passedMatch ? parseInt(passedMatch[1]) : 0;
+                failed = failedMatch ? parseInt(failedMatch[1]) : 0;
+                errors = errorMatch ? parseInt(errorMatch[1]) : 0;
+                total = passed + failed + errors;
+
+                if (total > 0) {
+                  passRate = ((passed / total) * 100).toFixed(1);
+                }
+                summary = summaryLine.trim() || "N/A";
+              } catch (e) {
+                summary = `Artifact not found: ${e.message}`;
+              }
+
+              results.push({ py, passed, failed, errors, total, passRate, summary });
+            }
+
+            // Build markdown table
+            const statusIcon = (rate) => parseFloat(rate) === 100 ? "✅" : parseFloat(rate) >= 90 ? "⚠️" : "❌";
+
+            let body = "## 🤖 Unit Test Results\n\n";
+            body += "| Python | Passed | Failed | Errors | Pass Rate |\n";
+            body += "|--------|--------|--------|--------|-----------|\n";
+
+            for (const r of results) {
+              body += `| ${r.py} | ${r.passed} | ${r.failed} | ${r.errors} | ${r.passRate}% ${statusIcon(r.passRate)} |\n`;
+            }
+
+            body += "\n---\n";
+            body += `<details><summary>📋 Summary</summary>\n\n`;
+            for (const r of results) {
+              body += `- **Python ${r.py}**: ${r.summary}\n`;
+            }
+            body += `</details>`;
+
+            // Post as a new comment (not update existing)
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body,
+            });
+
+            core.notice(`Posted unit test results comment for PR #${context.issue.number}`);
