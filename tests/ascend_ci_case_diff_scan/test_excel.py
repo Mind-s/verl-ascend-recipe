@@ -20,8 +20,7 @@ class TestXmlText:
         from modules.excel import _xml_text
 
         result = _xml_text("<test>")
-        assert "&lt;" in result
-        assert "&gt;" in result
+        assert result == "&lt;test&gt;"
 
     def test_strips_invalid_xml_chars(self):
         from xml.sax.saxutils import escape
@@ -192,6 +191,10 @@ class TestSideCells:
         assert cells[0] == "a.yml"
         assert cells[1] == 10
         assert "GPU Tests" in cells[2]
+        assert "unit-tests" in cells[2]
+        assert "Run pytest" in cells[2]
+        assert cells[3] == "pytest"
+        assert cells[4] == "pytest tests/"
 
     def test_with_none(self):
         from modules.excel import _side_cells
@@ -493,8 +496,10 @@ class TestWriteExcelReport:
 
             write_excel_report(path, report)
 
-            # Verify ZipFile was created with the right path
-            mock_zip.assert_called_once()
+            # Verify ZipFile was created with the right path and write mode
+            from zipfile import ZIP_DEFLATED
+
+            mock_zip.assert_called_once_with(path, "w", ZIP_DEFLATED)
 
             # Verify writestr was called for each required file
             written_names = {args[0][0] for args in mock_zip_instance.writestr.call_args_list}
@@ -532,6 +537,10 @@ class TestWritePastCommitExcelReport:
             mock_zip.return_value.__enter__.return_value = mock_zip_instance
 
             write_past_commit_excel_report(path, report)
+
+            from zipfile import ZIP_DEFLATED
+
+            mock_zip.assert_called_once_with(path, "w", ZIP_DEFLATED)
 
             written_names = {args[0][0] for args in mock_zip_instance.writestr.call_args_list}
             assert "xl/worksheets/sheet1.xml" in written_names  # Summary

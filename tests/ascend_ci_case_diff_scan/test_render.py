@@ -127,6 +127,7 @@ class TestRenderTable:
         result = render_table(["Col A", "Col B"], [["1", "2"], ["3", "4"]])
         text = "\n".join(result)
 
+        assert len(result) == 4
         assert "Col A" in text
         assert "Col B" in text
         assert "---" in text
