@@ -27,123 +27,27 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install pytest
+        run: pip install pytest pytest-cov
 
-      - name: Run unit tests
-        id: run_tests
+      - name: Run unit tests with coverage
+        id: tests
         run: |
-          pytest tests/ -v --tb=short 2>&1 | tee pytest-output.txt
-          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+          pytest tests/ -v --tb=short \
+            --cov=.agent/skills/ascend-ci-case-diff-scan/scripts/modules \
+            --cov-report=term \
+            --cov-fail-under=90
 
-      - name: Parse test results
-        if: always()
-        id: parse
+      - name: Coverage threshold not met
+        if: failure() && steps.tests.outcome == 'failure'
         run: |
-          # Parse pytest summary line from the output
-          SUMMARY=$(grep -E '^=+.*=+$' pytest-output.txt | tail -1 || echo "")
-
-          # Extract counts with fallback to 0
-          PASSED=$(echo "$SUMMARY" | grep -oP '\d+(?=\s*passed)' || echo "0")
-          FAILED=$(echo "$SUMMARY" | grep -oP '\d+(?=\s*failed)' || echo "0")
-          ERRORS=$(echo "$SUMMARY" | grep -oP '\d+(?=\s*errors?)' || echo "0")
-
-          PASSED=${PASSED:-0}
-          FAILED=${FAILED:-0}
-          ERRORS=${ERRORS:-0}
-          TOTAL=$((PASSED + FAILED + ERRORS))
-
-          if [ "$TOTAL" -gt 0 ]; then
-            PASS_RATE=$(python -c "print(f'{($PASSED/$TOTAL)*100:.1f}')")
-          else
-            PASS_RATE="0.0"
-          fi
-
-          # Export as outputs for the dependent comment job
-          echo "passed=$PASSED" >> $GITHUB_OUTPUT
-          echo "failed=$FAILED" >> $GITHUB_OUTPUT
-          echo "errors=$ERRORS" >> $GITHUB_OUTPUT
-          echo "total=$TOTAL" >> $GITHUB_OUTPUT
-          echo "pass_rate=$PASS_RATE" >> $GITHUB_OUTPUT
-
-          # Write summary to job's step summary
-          {
-            echo "## Unit Test Results (Python 3.10)"
-            echo
-            echo "| Total | Passed | Failed | Errors | Pass Rate |"
-            echo "|-------|--------|--------|--------|-----------|"
-            echo "| ${TOTAL} | ${PASSED} | ${FAILED} | ${ERRORS} | ${PASS_RATE}% |"
-          } >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload test results artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            pytest-output.txt
-          retention-days: 1
-
-  comment:
-    needs: unit-tests
-    if: github.event_name == 'pull_request' && always()
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-    steps:
-      - name: Download test result artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: test-results
-
-      - name: Post results comment on PR
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require("fs");
-
-            let passed = 0, failed = 0, errors = 0, total = 0;
-            let passRate = "0.0";
-            let summary = "N/A";
-
-            try {
-              const content = fs.readFileSync("pytest-output.txt", "utf8");
-              const lines = content.split("\n");
-              const summaryLine = lines.reverse().find(l => /^=+.*=+$/.test(l)) || "";
-
-              const passedMatch = summaryLine.match(/(\d+)\s*passed/);
-              const failedMatch = summaryLine.match(/(\d+)\s*failed/);
-              const errorMatch = summaryLine.match(/(\d+)\s*errors?/);
-
-              passed = passedMatch ? parseInt(passedMatch[1]) : 0;
-              failed = failedMatch ? parseInt(failedMatch[1]) : 0;
-              errors = errorMatch ? parseInt(errorMatch[1]) : 0;
-              total = passed + failed + errors;
-
-              if (total > 0) {
-                passRate = ((passed / total) * 100).toFixed(1);
-              }
-              summary = summaryLine.trim() || "N/A";
-            } catch (e) {
-              summary = `Artifact not found: ${e.message}`;
-            }
-
-            const pct = parseFloat(passRate);
-            const icon = pct === 100 ? "✅" : pct >= 90 ? "⚠️" : "❌";
-
-            let body = "## 🤖 Unit Test Results\n\n";
-            body += "| Total | Passed | Failed | Errors | Pass Rate |\n";
-            body += "|-------|--------|--------|--------|-----------|\n";
-            body += `| ${total} | ${passed} | ${failed} | ${errors} | ${passRate}% ${icon} |\n`;
-            body += "\n---\n";
-            body += `<details><summary>📋 Summary</summary>\n\n${summary}\n</details>`;
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: body,
-            });
-
-            core.notice(`Posted unit test results comment for PR #${context.issue.number}`);
+          echo "::error::Unit test coverage is below 90%. Please add more unit tests to meet the minimum coverage threshold."
+          echo ""
+          echo "  ============================================="
+          echo "    COVERAGE CHECK FAILED"
+          echo "    Overall unit test coverage is below 90%"
+          echo "    Please add more unit tests to reach the"
+          echo "    minimum 90% coverage threshold."
+          echo "  ============================================="
+          echo ""
+          echo "  Run locally for detailed line coverage:"
+          echo "    pytest tests/ --cov=.agent/skills/ascend-ci-case-diff-scan/scripts/modules --cov-report=term-missing"
