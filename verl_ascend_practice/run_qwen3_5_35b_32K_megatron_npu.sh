@@ -26,12 +26,12 @@ ALL_OFFLOAD=${ALL_OFFLOAD:-True}
 
 rollout_name=${rollout_name:-vllm}
 project_name=${project_name:-verl_grpo_qwen3_5_35b_geo3k}
-exp_name=${exp_name:-qwen3_5_35b_megatron_npu_4k_32k}
+exp_name=${exp_name:-qwen3_5_35b_megatron_npu_32k}
 adv_estimator=${adv_estimator:-grpo}
 
 HF_MODEL_PATH=${HF_MODEL_PATH:-"${HOME}/models/Qwen3.5-35B-A3B"}
-train_path=${train_path:-"${HOME}/data/geo3k-4k/train.parquet"}
-test_path=${test_path:-"${HOME}/data/geo3k-4k/test.parquet"}
+train_path=${train_path:-"${HOME}/data/geo3k/train.parquet"}
+test_path=${test_path:-"${HOME}/data/geo3k/test.parquet"}
 
 start_time=$(date +%Y%m%d)_$(date +%H%M%S)
 # ---- end user-adjustable ----
@@ -161,4 +161,4 @@ python3 -m verl.trainer.main_ppo \
     "${REF[@]}" \
     "${TRAINER[@]}" \
     "${EXTRA[@]}" \
-    "$@" 2>&1 | tee logs/qwen3_5_35b_grpo_megatron_npu_4k_32k-${start_time}.log
+    "$@" 2>&1 | tee logs/qwen3_5_35b_grpo_32K_megatron-${start_time}.log
